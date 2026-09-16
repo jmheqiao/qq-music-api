@@ -1,3 +1,9 @@
+## 2.9.0 (2026-09-16)
+
+### Other Changes
+
+* Update docker.yml ([4bf247e](https://github.com/sansenjian/qq-music-api/commit/4bf247ea1d1e5fa925e3addf42cb0e18f267ac56))
+
 ## 2.8.0 (2026-09-16)
 
 ### Other Changes
