@@ -1,3 +1,9 @@
+## 2.7.0 (2026-09-16)
+
+### Other Changes
+
+* Create docker.yml ([e72a8c7](https://github.com/sansenjian/qq-music-api/commit/e72a8c72feb132f546ade7e0d522b6cf573e3043))
+
 ## 2.6.0 (2026-08-27)
 
 ### Features
