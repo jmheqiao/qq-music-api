@@ -6,7 +6,7 @@ LABEL maintainer="Rain120 <1085131904@qq.com>"
 WORKDIR /app
 
 COPY package.json .
-
+COPY packages/mcp/package.json ./packages/mcp/
 RUN npm install --registry=https://registry.npmmirror.com
 
 COPY . .
