@@ -1,3 +1,9 @@
+## 2.10.0 (2026-09-16)
+
+### Other Changes
+
+* Update Dockerfile ([1f0b79f](https://github.com/sansenjian/qq-music-api/commit/1f0b79fd9dbf723fcade60fd051e511b600c9399))
+
 ## 2.9.0 (2026-09-16)
 
 ### Other Changes
