@@ -30,7 +30,7 @@ jobs:
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF#refs/tags/v}"
           else
-            TAG="latest"
+            TAG=$(node -p "require('./package.json').version")
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
