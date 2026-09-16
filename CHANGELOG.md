@@ -1,3 +1,9 @@
+## 2.12.0 (2026-09-16)
+
+### Other Changes
+
+* Add files via upload ([91e9dc3](https://github.com/sansenjian/qq-music-api/commit/91e9dc39bbad7cd8591d76012ccd463cb152e692))
+
 ## 2.11.0 (2026-09-16)
 
 ### Other Changes
