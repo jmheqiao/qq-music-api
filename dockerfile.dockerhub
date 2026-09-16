@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1
+# =====================================================================
+# Dockerfile.dockerhub —— CI 专用（GitHub Actions 构建后推 GHCR + Docker Hub）
+# 与根目录 Dockerfile 的分工：
+#   - Dockerfile          本机/自有服务器手工构建用，保留 npmmirror 国内源
+#   - Dockerfile.dockerhub  Actions 跑：GH runner 到 npmjs 直连更快，故不带 --registry
+# =====================================================================
+FROM node:24-alpine
+
+LABEL org.opencontainers.image.title="qq-music-api"
+LABEL org.opencontainers.image.description="QQ Music API - Koa 2 + TypeScript (sansenjian fork)"
+# GHCR 用 source 标签把镜像包自动关联到你的仓库页面
+LABEL org.opencontainers.image.source="https://github.com/sansenjian/qq-music-api"
+
+WORKDIR /app
+
+# 只拷贝依赖清单，利用 Docker 层缓存：代码变更不触发依赖重装
+COPY package.json package-lock.json ./
+COPY packages/mcp/package.json ./packages/mcp/
+
+# npm ci 严格按锁文件安装；GH runner 直连 npmjs，无需镜像源
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3200
+
+# 容器自检：首页(API Explorer)返回即健康；PORT 环境变量被改时自动跟随
+HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${PORT:-3200}/" >/dev/null 2>&1 || exit 1
+
+ENTRYPOINT ["npm", "run"]
+CMD ["start"]
+
+# ---- 备注 ----
+# 1. 仓库 workspaces 声明了 packages/mcp，必须先 COPY 其 package.json 再 npm ci。
+# 2. 若 npm ci 报 lock file out of sync（version.yml 自动改版本未同步锁文件），
+#    回退方案：RUN npm install -g npm@11.14.1 && npm install
+# 3. 服务器为 ARM（Graviton 等）时在 docker.yml 的 build-push 加 platforms: linux/arm64。
