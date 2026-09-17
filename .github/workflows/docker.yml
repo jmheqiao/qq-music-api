@@ -20,29 +20,24 @@ jobs:
     permissions:
       contents: read
       packages: write # 推 ghcr.io 必需
-    # 跨 job 传递镜像名与版本号（step 输出跨 job 不可见，必须走 job outputs）
     outputs:
-      repo_lc: ${{ steps.meta.outputs.repo_lc }}
-      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Compute image tag & lowercase repo
+      - name: Compute version
         id: meta
         run: |
           if [ -n "${{ github.event.inputs.tag }}" ]; then
-            TAG="${{ github.event.inputs.tag }}"
+            VERSION="${{ github.event.inputs.tag }}"
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            TAG="${GITHUB_REF#refs/tags/v}"
+            VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            TAG=$(node -p "require('./package.json').version")
+            VERSION=$(node -p "require('./package.json').version")
           fi
-          # GHCR 要求镜像路径必须全小写
-          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "repo_lc=$REPO_LC" >> "$GITHUB_OUTPUT"
-          echo "Version tag: $TAG / GHCR image: ghcr.io/$REPO_LC"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
 
       - uses: docker/setup-buildx-action@v3
 
@@ -59,6 +54,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # metadata-action 自动把镜像名转全小写（GHCR 硬要求），
+      # 不再走 output 传递镜像名，规避 "Skip output ... may contain secret" 问题
+      - name: Docker meta (tags & labels)
+        id: tags
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/qq-music-api
+          tags: |
+            type=raw,value=${{ steps.meta.outputs.version }}
+            type=raw,value=latest
+
       - name: Build & push (multi-registry)
         uses: docker/build-push-action@v6
         with:
@@ -66,11 +74,8 @@ jobs:
           file: ./Dockerfile.dockerhub
           platforms: linux/amd64
           push: true
-          tags: |
-            ghcr.io/${{ steps.meta.outputs.repo_lc }}:${{ steps.meta.outputs.tag }}
-            ghcr.io/${{ steps.meta.outputs.repo_lc }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/qq-music-api:${{ steps.meta.outputs.tag }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/qq-music-api:latest
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: ${{ steps.tags.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -86,8 +91,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            GHCR_IMAGE="ghcr.io/${{ needs.build-push.outputs.repo_lc }}"
-            # 包是 Public 时可删除下面这行 login；Private 包需要 read:packages 的 PAT
+            GHCR_IMAGE="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
+            # GHCR 包为 Private 时需要下面这行 login（PAT 需 read:packages）；改 Public 后可删
             echo "${{ secrets.GHCR_DEPLOY_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_DEPLOY_USER }}" --password-stdin
             docker pull "$GHCR_IMAGE:latest"
             docker stop qq-music-api 2>/dev/null || true
