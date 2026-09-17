@@ -1,3 +1,9 @@
+## 2.13.0 (2026-09-17)
+
+### Other Changes
+
+* Rename dockerfile.dockerhub to Dockerfile.dockerhub ([714501e](https://github.com/sansenjian/qq-music-api/commit/714501ee09b4fcabc4627c243a6fcd1af551b5bc))
+
 ## 2.12.0 (2026-09-16)
 
 ### Other Changes
